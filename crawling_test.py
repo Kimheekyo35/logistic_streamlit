@@ -69,13 +69,13 @@ with sync_playwright() as p:
         for country in country_input:
             page.goto(numbuzin_country[country],timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
             print(f"{country} 열었음")
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(5000)
             # Shipping Channel 누르기
             group = page.locator("div.radio-button-wrapper div.eds-radio-group--solid")
-            labels = group.locator("label").all()
+            labels = group.locator("label[class='radio-button']").all()
             page.wait_for_timeout(1000)
             for label in labels:
-                label_button = label.locator("span.eds-radio-button__label")
+                label_button = label.locator("span.eds-radio-button__label div.eds-popover__ref")
                 zero_up = label_button.locator("span.meta").inner_text().strip()
                 count = int(zero_up.strip("()"))
                 if count >= 1:
