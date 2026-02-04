@@ -71,11 +71,13 @@ with sync_playwright() as p:
             print(f"{country} 열었음")
             page.wait_for_timeout(5000)
             # Shipping Channel 누르기
-            group = page.locator("div.radio-button-wrapper div.eds-radio-group--solid")
-            labels = group.locator("label[class='radio-button']").all()
+            group = page.locator("div.shipping-channel-filter div.eds-radio-group")
+            labels = group.locator("label[class='radio-button']").count()
+            print(labels)
             page.wait_for_timeout(1000)
-            for label in labels:
-                label_button = label.locator("span.eds-radio-button__label div.eds-popover__ref")
+
+            for i in range(labels):
+                label_button = labels.nth(i).locator("label.eds-radio-button")
                 zero_up = label_button.locator("span.meta").inner_text().strip()
                 count = int(zero_up.strip("()"))
                 if count >= 1:
