@@ -26,9 +26,9 @@ fwee_country_list = ["Singapore","Taiwan Xiapi","Thailand","Malaysia","Vietnam",
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False,
                                 proxy={
-                                            "server": "http://isp.decodo.com:10000",
-                                            "username":"spom4r4phs",
-                                            "password":"=9pw8i4YZqRof3jWqu"
+                                            "server": os.getenv("PROXY_SERVER"),
+                                            "username": os.getenv("PROXY_USER"),
+                                            "password": os.getenv("PROXY_PASSWORD")
                                         }
                                         )
 
