@@ -24,7 +24,13 @@ country_input = list(map(str,country_input))
 
 fwee_country_list = ["Singapore","Taiwan Xiapi","Thailand","Malaysia","Vietnam","Philippines"]
 with sync_playwright() as p:
-    browser = p.chromium.launch(headless=False)
+    browser = p.chromium.launch(headless=False,
+                                proxy={
+                                            "server": "http://isp.decodo.com:10000",
+                                            "username":"spom4r4phs",
+                                            "password":"=9pw8i4YZqRof3jWqu"
+                                        }
+                                        )
 
     page = browser.new_page()
     page.goto(
@@ -70,20 +76,39 @@ with sync_playwright() as p:
             page.goto(numbuzin_country[country],timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
             print(f"{country} 열었음")
             page.wait_for_timeout(5000)
-            # Shipping Channel 누르기
-            group = page.locator("div.shipping-channel-filter div.eds-radio-group")
-            labels = group.locator("label[class='radio-button']").count()
-            print(labels)
+
+            # Shipping Channel 제대로 가져오는지 체크
+            shipping_channel = page.locator("div.shipping-channel-filter div.mass-ship-filter-item div.content")
+
+            group = shipping_channel.locator("div.radio-button-wrapper div.eds-radio-group")
+            labels = group.locator("label.eds-radio-button")
+            label_cnt = labels.count()
             page.wait_for_timeout(1000)
 
-            for i in range(labels):
-                label_button = labels.nth(i).locator("label.eds-radio-button")
+            for i in range(label_cnt):
+                label_button = labels.nth(i)
                 zero_up = label_button.locator("span.meta").inner_text().strip()
-                count = int(zero_up.strip("()"))
-                if count >= 1:
+                per_count = int(zero_up.strip("()"))
+                if per_count >= 1:
                     label_button.click()
                     page.wait_for_timeout(1000)
-                
-            # 200/page 버튼 누르기
+
+                    # 50/page 버튼 누르기
+                    page_button = page.locator("div.mass-ship-pagination div.pagination-wrapper div.page-size-dropdown-container")
+                    page_button.click()
+                    page.wait_for_timeout(1000)
+
+                    # 드롭다운 생성 및 버튼 누르기
+                    page_button = page.locator("div.eds-popper-container ul.eds-dropdown-menu li.eds-dropdown-item").nth(5).click()
+                    page.wait_for_timeout(1500)
+
+                    # 전체 상품 체크박스 누르기
+                    page.locator("div.mass-ship-list-container div.mass-ship-list div.fix-card-top label.eds-checkbox").click()
+                    page.wait_for_timeout(1500)
+
+
+                    
+
+
     except TimeoutError as e:
         print(f"error: {e}")
