@@ -36,46 +36,13 @@ with sync_playwright() as p:
                                 #         }
                                 args=["--start-maximized"]
                                 )
+    context = browser.new_context(storage_state="numbuzin_shopee_state.json",
+                                   viewport={"width": 1920, "height": 1080})
+    page = context.new_page()
+    page.goto("https://seller.shopee.kr/?cnsc_shop_id=545141727",wait_until="domcontentloaded",timeout=PLAYWRIGHT_SELECTOR_TIMEOUT_MS)
 
-    page = browser.new_page()
-    page.goto(
-        "https://seller.shopee.kr/account/signin",
-        wait_until="domcontentloaded",
-        timeout=PLAYWRIGHT_SELECTOR_TIMEOUT_MS,
-    )
+    print("로그인 완료")
 
-    print("Page loaded")
-
-    num_id = os.getenv("NUMBUZIN_ID")                                                             
-    num_pw = os.getenv("NUMBUZIN_PW")  
-
-    if not num_id or not num_pw:
-        raise ValueError("Missing NUMBUZIN_ID or NUMBUZIN_PW env var")
-
-    page.locator('input.eds-input__input[placeholder="Email/Phone/Username"]').wait_for(
-        timeout=PLAYWRIGHT_SELECTOR_TIMEOUT_MS
-    )
-    page.locator('input.eds-input__input[placeholder="Email/Phone/Username"]').type(
-        num_id, delay=120
-    )
-    page.locator('input.eds-input__input[placeholder="Password"]').type(
-        num_pw, delay=120
-    )
-
-    # 버튼 클릭 후, 다음 페이지 나올 때까지 기다리기
-    # expect_navigation은 “그 블록 안의 클릭 1회”에만 대응
-    page.locator("button.submit-btn:has-text('Log In')").click()
-    
-    # 인증코드 직접 입력
-    code = input("인증코드 입력: ").strip()
-    page.locator('input.eds-input__input[placeholder="Please input"]').type(code, delay=120)
-
-    # 인증코드 자동 입력 후 클릭 버튼
-    page.locator("button.eds-button--normal:has-text('Confirm')").click()
-    page.wait_for_selector("div.todo-list-container",timeout=30000)
-
-    # 메인 메뉴 화면으로 들어감
-    # 공백 제거
     try:
         for country in country_input:
             page.goto(numbuzin_country[country],timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
@@ -140,7 +107,7 @@ with sync_playwright() as p:
 
                     print(f"{country} 최근 생성된 송장 클릭했음")
 
-                    page.wait_for_timeout(5000)
+                    page.wait_for_timeout(10000)
                     saved = download_pdf_from_shopee_preview(page, save_path=f"./numbuzin_{KST}/numbuzin_{country}_{KST}_invoice.pdf")
                     print(f"{country} PDF 저장 완료: {saved}")
 
