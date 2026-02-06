@@ -30,7 +30,7 @@ country_input = list(map(str,country_input))
 
 # 한국 시간 설정
 dt = datetime.now()
-KST = dt.strftime("%Y-%m-%d %H:%M:%S")
+KST = dt.strftime("%Y-%m-%d")
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False,
                                 args=["--start-maximized"]
@@ -70,7 +70,7 @@ with sync_playwright() as p:
                             print(f"{country}/{shipping_channel} 처리할 송장 없음, 이동")
                             break
                         else:
-                        # 50/page 버튼 누르기
+                            # 50/page 버튼 누르기
                             page_button = page.locator("div.mass-ship-pagination div.pagination-wrapper div.page-size-dropdown-container")
                             page_button.click()
                             page.wait_for_timeout(1000)
@@ -108,13 +108,19 @@ with sync_playwright() as p:
                             # 2번째 항목 클릭
                             item = dropdown.locator("ul > li").nth(1)
                             item.wait_for(state="attached", timeout=10000)
-                            item.click()
+                            
+                            with page.expect_popup(timeout=5000) as p:
+                                item.click()
+                            pop_up = p.value
+                            pop_up.wait_for_load_state("domcontentloaded",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+                            print(f"{country} 팝업 떴음")
 
-                            print(f"{country} 최근 생성된 송장 클릭했음")
-
-                            page.wait_for_timeout(10000)
-                            saved = download_pdf_from_shopee_preview(page, save_path=f"./numbuzin_{KST}/numbuzin_{country}_{KST}.pdf")
+                            saved = download_pdf_from_shopee_preview(pop_up, save_path=f"./numbuzin_{KST}/numbuzin_{country}_{KST}.pdf")
                             print(f"{country} PDF 저장 완료: {saved}")
+                            pop_up.close()
 
-    except TimeoutError as e:
+                            # 팝업 닫고 새로고침
+                            page.reload(wait_until="domcontentloaded",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+
+    except Exception as e:
         print(f"error: {e}")
