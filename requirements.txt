@@ -1,1 +1,5 @@
 pandas
+PyPDF2
+playwright
+streamlit-authenticator
+streamlit
