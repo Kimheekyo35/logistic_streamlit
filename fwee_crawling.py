@@ -8,6 +8,8 @@ from iframe_to_pdf import download_pdf_from_shopee_preview
 from pdf_merge import pdf_merge
 from datetime import datetime
 #해당 코드 써줘야 env가져올 수 있음
+import sys
+
 load_dotenv()
 
 PLAYWRIGHT_NAV_TIMEOUT_MS = int("30000")
@@ -15,7 +17,7 @@ PLAYWRIGHT_SELECTOR_TIMEOUT_MS = int("30000")
 
 fwee_countrylist = {
     "Singapore":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=1147332494&mass_shipment_tab=201&filter.shipping_method=18063&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770266071&filter.shipping_urgency_filter.shipping_urgency=1",
-    "TaiwanXiapi":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=1152063847&mass_shipment_tab=201&filter.shipping_method=38064&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770266088&filter.shipping_urgency_filter.shipping_urgency=1",
+    "Taiwan Xiapi":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=1152063847&mass_shipment_tab=201&filter.shipping_method=38064&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770266088&filter.shipping_urgency_filter.shipping_urgency=1",
     "Thailand":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=1152063845&mass_shipment_tab=201&filter.shipping_method=78016&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770266100&filter.shipping_urgency_filter.shipping_urgency=1",
     "Malaysia":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=1152063834&mass_shipment_tab=201&filter.shipping_method=28062&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770266119&filter.shipping_urgency_filter.shipping_urgency=1",
     "Vietnam":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=1152063841&mass_shipment_tab=201&filter.shipping_method=58016&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770266159&filter.shipping_urgency_filter.shipping_urgency=1",
@@ -26,8 +28,7 @@ def get_parcel_count(page):
     text = page.locator("div.fix-card-container div.fix-top-content-left div.parcel-count").inner_text().strip()
     return int(text.split()[0])
 
-country_input = input("나라를 입력하세요: ").split()
-country_input = list(map(str,country_input))
+country_input = sys.argv[1:]
 
 # 한국 시간 설정
 dt = datetime.now()
@@ -60,6 +61,7 @@ with sync_playwright() as p:
 
             for i in range(label_cnt):
                 label_button = labels.nth(i)
+                label_name = label_button.locator("span").first.inner_text().strip().split()[:2]
                 zero_up = label_button.locator("span.meta").inner_text().strip()
                 per_count = int(zero_up.strip("()"))
                 if per_count >= 1:
@@ -70,7 +72,7 @@ with sync_playwright() as p:
                         parcel_count = get_parcel_count(page)
                         print(f"{country} 현재 처리할 송장 수: {parcel_count}")
                         if parcel_count == 0:
-                            print(f"{country}/{shipping_channel} 처리할 송장 없음, 이동")
+                            print(f"{country}/{label_name} 처리할 송장 없음, 이동")
                             break
                         else:
                             # 50/page 버튼 누르기
