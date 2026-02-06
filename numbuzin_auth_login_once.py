@@ -3,6 +3,7 @@
 from playwright.sync_api import sync_playwright, TimeoutError
 import os
 from dotenv import load_dotenv 
+import sys
 
 #해당 코드 써줘야 env가져올 수 있음
 load_dotenv()
@@ -40,14 +41,19 @@ with sync_playwright() as p:
     page.locator("button.submit-btn:has-text('Log In')").click()
     
     # 인증코드 직접 입력
-    code = input("인증코드 입력: ").strip()
-    page.locator('input.eds-input__input[placeholder="Please input"]').type(code, delay=120)
-
+    page.wait_for_selector("input[placeholder='Please input']", timeout=60000)      
+                                                                                    
+    if len(sys.argv) > 1:                                                           
+        code = sys.argv[1]                                           
+    else:                                                                           
+        code = input("인증코드 입력: ").strip()                                     
+                                                                                    
+    page.locator("input[placeholder='Please input']").type(code, delay=120)         
     # 인증코드 자동 입력 후 클릭 버튼
     page.locator("button.eds-button--normal:has-text('Confirm')").click()
     page.wait_for_selector("div.todo-list-container",timeout=30000)
 
-    page.wait_for_timeout(10000)
+    page.wait_for_timeout(5000)
 
     context.storage_state(path="numbuzin_shopee_state.json")
     print("Login state saved to numbuzin_shopee_state.json")
