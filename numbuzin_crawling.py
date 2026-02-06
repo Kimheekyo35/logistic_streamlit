@@ -13,6 +13,10 @@ load_dotenv()
 PLAYWRIGHT_NAV_TIMEOUT_MS = int("30000")
 PLAYWRIGHT_SELECTOR_TIMEOUT_MS = int("30000")
 
+def get_parcel_count(page):
+    text = page.locator("div.result-count-wrapper div[data-testid*='result-count']").inner_text().strip()
+    return int(text.split()[0])
+
 numbuzin_country = {
     "Singapore":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=358623637&mass_shipment_tab=201&filter.shipping_method=18063&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770187020&filter.shipping_urgency_filter.shipping_urgency=1",
     "TaiwanXiapi":"https://seller.shopee.kr/portal/sale/mass/ship?cnsc_shop_id=545141727&mass_shipment_tab=201&filter.shipping_method=38064&filter.order_item_filter_type=item0&filter.order_process_status=1&filter.sort.sort_type=2&filter.sort.ascending=true&filter.pre_order=2&filter.shipping_urgency_filter.current_time=1770187057&filter.shipping_urgency_filter.shipping_urgency=1",
@@ -29,11 +33,6 @@ dt = datetime.now()
 KST = dt.strftime("%Y-%m-%d %H:%M:%S")
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False,
-                                # proxy={
-                                #             "server": os.getenv("PROXY_SERVER"),
-                                #             "username": os.getenv("PROXY_USER"),
-                                #             "password": os.getenv("PROXY_PASSWORD")
-                                #         }
                                 args=["--start-maximized"]
                                 )
     context = browser.new_context(storage_state="numbuzin_shopee_state.json",
@@ -64,52 +63,58 @@ with sync_playwright() as p:
                 if per_count >= 1:
                     label_button.click()
                     page.wait_for_timeout(1000)
+                    while True:
+                        parcel_count = get_parcel_count(page)
+                        print(f"{country}/{shipping_channel} 현재 처리할 송장 수: {parcel_count}")
+                        if parcel_count == 0:
+                            print(f"{country}/{shipping_channel} 처리할 송장 없음, 이동")
+                            break
+                        else:
+                        # 50/page 버튼 누르기
+                            page_button = page.locator("div.mass-ship-pagination div.pagination-wrapper div.page-size-dropdown-container")
+                            page_button.click()
+                            page.wait_for_timeout(1000)
 
-                    # 50/page 버튼 누르기
-                    page_button = page.locator("div.mass-ship-pagination div.pagination-wrapper div.page-size-dropdown-container")
-                    page_button.click()
-                    page.wait_for_timeout(1000)
+                            # 드롭다운 생성 및 버튼 누르기
+                            page_button = page.locator("div.eds-popper-container ul.eds-dropdown-menu li.eds-dropdown-item").nth(5).click()
+                            page.wait_for_timeout(1500)
 
-                    # 드롭다운 생성 및 버튼 누르기
-                    page_button = page.locator("div.eds-popper-container ul.eds-dropdown-menu li.eds-dropdown-item").nth(5).click()
-                    page.wait_for_timeout(1500)
+                            # 전체 상품 체크박스 누르기
+                            page.locator("div.mass-ship-list-container div.mass-ship-list div.fix-card-top label.eds-checkbox").click()
+                            page.wait_for_timeout(1500)
 
-                    # 전체 상품 체크박스 누르기
-                    page.locator("div.mass-ship-list-container div.mass-ship-list div.fix-card-top label.eds-checkbox").click()
-                    page.wait_for_timeout(1500)
+                            #Dropoff 가져오는지
+                            page.locator("div.mass-action-panel div.main div.button-wrapper").click()
+                            page.wait_for_timeout(1500)
 
-                    #Dropoff 가져오는지
-                    page.locator("div.mass-action-panel div.main div.button-wrapper").click()
-                    page.wait_for_timeout(1500)
+                            # Arrange Shipment Progress 창에서 test
+                            page.locator("div.ship-process").wait_for(state="visible",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+                            another_win = page.locator("div.ship-process div.content")
+                            another_win_name = another_win.locator("div.header div.title").inner_text().strip()
+                            print(f"{country} {another_win} 창 떴음")
 
-                    # Arrange Shipment Progress 창에서 test
-                    page.locator("div.ship-process").wait_for(state="visible",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
-                    another_win = page.locator("div.ship-process div.content")
-                    another_win_name = another_win.locator("div.header div.title").inner_text().strip()
-                    print(f"{country} {another_win} 창 떴음")
+                            # generate 버튼 누르기
+                            generate_btn =another_win.locator("button:has-text('Generate')").first
+                            generate_btn.wait_for(state="visible", timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+                            generate_btn.click()
+                            print(f"{country} Generate 클릭했음")
+                            page.wait_for_timeout(1500)
 
-                    # generate 버튼 누르기
-                    generate_btn =another_win.locator("button:has-text('Generate')").first
-                    generate_btn.wait_for(state="visible", timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
-                    generate_btn.click()
-                    print(f"{country} Generate 클릭했음")
-                    page.wait_for_timeout(1500)
+                            # 팝오버 안의 2번째 li 클릭
+                            # attach는 DOM에 있기만 하면 됨
+                            dropdown = page.locator("div.eds-popper-container").last
+                            dropdown.wait_for(state="attached", timeout=10000)
 
-                    # 팝오버 안의 2번째 li 클릭
-                    # attach는 DOM에 있기만 하면 됨
-                    dropdown = page.locator("div.eds-popper-container").last
-                    dropdown.wait_for(state="attached", timeout=10000)
+                            # 2번째 항목 클릭
+                            item = dropdown.locator("ul > li").nth(1)
+                            item.wait_for(state="attached", timeout=10000)
+                            item.click()
 
-                    # 2번째 항목 클릭
-                    item = dropdown.locator("ul > li").nth(1)
-                    item.wait_for(state="attached", timeout=10000)
-                    item.click()
+                            print(f"{country} 최근 생성된 송장 클릭했음")
 
-                    print(f"{country} 최근 생성된 송장 클릭했음")
-
-                    page.wait_for_timeout(10000)
-                    saved = download_pdf_from_shopee_preview(page, save_path=f"./numbuzin_{KST}/numbuzin_{country}_{KST}_invoice.pdf")
-                    print(f"{country} PDF 저장 완료: {saved}")
+                            page.wait_for_timeout(10000)
+                            saved = download_pdf_from_shopee_preview(page, save_path=f"./numbuzin_{KST}/numbuzin_{country}_{KST}.pdf")
+                            print(f"{country} PDF 저장 완료: {saved}")
 
     except TimeoutError as e:
         print(f"error: {e}")
