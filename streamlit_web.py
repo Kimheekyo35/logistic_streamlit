@@ -5,7 +5,33 @@ from pathlib import Path
 
 menu = st.sidebar.radio("Menu", ["홈","Fwee 송장번호 크롤링", "Numbuzin 송장번호 크롤링"])
 
-if menu == "홈":                                                                
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+
+# 로그인 함수 정의
+def login(id, pw):
+    if id == "admin" and pw == "admin123":
+        st.session_state["logged_in"] = True
+        st.success("로그인 성공!")
+        st.rerun() # 페이지 새로고침
+    else:
+        st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
+
+def logout():
+    st.session_state["logged_in"] = False
+    st.success("로그아웃 되었습니다.")
+    st.rerun() # 페이지 새로고침
+
+# 로그인 화면
+if not st.session_state["logged_in"]:
+    st.title("로그인")
+    id = st.text_input("아이디")
+    pw = st.text_input("비밀번호", type="password")
+    if st.button("로그인"):
+        login(id, pw)
+    st.stop()  # 로그인 전에는 아래 코드 실행 안 함
+
+elif menu == "홈":                                                           
     st.title("물류팀 shopee 송장번호 크롤링 자동화 프로그램")                                                              
     st.write("Welcome to the homepage!")                 
 
@@ -48,7 +74,7 @@ elif menu == "Fwee 송장번호 크롤링":
         options = ["Singapore", "Malaysia", "Thailand", "Philippines", "Vietnam", "Taiwan Xiapi"]
         selected_countries = st.multiselect("나라를 선택하세요:", options)
         country_submitted = st.form_submit_button("크롤링 시작")
-        
+
         if country_submitted and selected_countries:
             script = Path(__file__).parent / "fwee_crawling.py"
             subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
