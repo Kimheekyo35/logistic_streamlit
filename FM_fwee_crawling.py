@@ -49,7 +49,8 @@ with sync_playwright() as p:
             # pickup_code 가져오기
             pickup_code_rt = page.locator("div.eds-scrollbar__content > table > tbody > tr").nth(0)
             pickup_code = pickup_code_rt.locator("td").nth(3).inner_text()
-            
+            print(pickup_code)
+
             download = pickup_code_rt.locator("td").last
             with page.expect_popup(timeout=10000) as popup_info:
                 download.locator("div.eds-table__cell button").click()
@@ -58,6 +59,57 @@ with sync_playwright() as p:
             saved = download_pdf(pop_up,save_path=f"FWEE_FM_{KST}/FWEE_FM_{country}_{KST}.pdf") 
             print(f"{country} 저장 완료: {saved}")
             pop_up.close()
+
+            # url 변경
+            def change(url):
+                origin_url = url.split("/")[7]
+                cnsc_shop = origin_url.split("?")[1]
+                own_number = cnsc_shop.split("=")[1]
+                change_url = "/".join(url.split("/")[:7])+"/link?type=1&cnsc_shop_id="+own_number
+                return change_url
+
+            change_url = change(fwee_countrylist[country])
+            page.goto(change_url,wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+            page.wait_for_timeout(3000)
+
+            while True:
+                empty = page.locator("div.eds-table__empty div.eds-default-page__content:has-text('No Orders Found')")
+                if empty.is_visible():
+                    print("데이터 없음")
+                    break
+
+                else:
+                    # 새로고침 후에 너무 빨라서 클릭이 제대로 안 됨 -> timeout 주기
+                    page.wait_for_timeout(3000)
+
+                    # select All 버튼 클릭
+                    select_all = page.locator("div.eds-table-scrollX-left div.eds-table__main-header tr th").nth(0).locator("label.eds-checkbox > span")
+                    select_all.wait_for(state="attached")
+                    select_all.click()
+
+                    # Bind 어쩌고 버튼 클릭 
+                    bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").inner_text().strip()
+                    print(bind_button)
+
+                    date = page.locator("div.eds-table__body-container div.eds-scrollbar__content tbody tr").first.locator("td").nth(6).inner_text().strip()
+                    date = date.split()[0].split("/")[-1]
+
+                    if country == "Vietnam" and date == "2025":
+                        break
+                    
+                    break
+
+                page.reload(wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+
+
+
+
+
+
+
+
+
+
 
 
     except Exception as e:
