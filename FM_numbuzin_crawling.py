@@ -9,7 +9,7 @@ PLAYWRIGHT_NAV_TIMEOUT_MS = int("30000")
 PLAYWRIGHT_SELECTOR_TIMEOUT_MS = int("30000")
 
 num_countrylist = {
-    "Singapore":"https://seller.shopee.kr/portal/sale/order/pre-declare/link?type=1&cnsc_shop_id=358623637",
+    "Singapore":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=358623637",
     "TaiwanXiapi":"https://seller.shopee.kr/portal/sale/order/pre-declare/link?type=1&cnsc_shop_id=545141727",
     "Philippines":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=832134646"
 }
@@ -36,9 +36,11 @@ with sync_playwright() as p:
             page.locator("input.eds-input__input[placeholder='Input number']").type(number,delay=110)
             
             # Submit 버튼 누르기
-            submit = page.locator("div.first-mile-generate > button")
-            print(submit.inner_text().strip())
+            submit = page.locator("div.first-mile-generate > button").click()
 
+            # 팝업 x표 누르기
+            success_popup = page.locator("div.first-mile-generate div.eds-modal__box i.eds-modal__close").click()
+            
             # pickup_code 가져오기
             pickup_code_rt = page.locator("div.eds-scrollbar__content > table > tbody > tr").nth(0)
             pickup_code = pickup_code_rt.locator("td").nth(3).inner_text()

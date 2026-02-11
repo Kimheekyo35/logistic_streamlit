@@ -44,16 +44,20 @@ with sync_playwright() as p:
             
             # Submit 버튼 누르기
             submit = page.locator("div.first-mile-generate > button")
-            print(submit.inner_text().strip())
+            
+            # 팝업 x표 누르기
+            success_popup = page.locator("div.first-mile-generate div.eds-modal__box i.eds-modal__close").click()
 
             # pickup_code 가져오기
             pickup_code_rt = page.locator("div.eds-scrollbar__content > table > tbody > tr").nth(0)
             pickup_code = pickup_code_rt.locator("td").nth(3).inner_text()
             print(pickup_code)
 
+            # download 버튼 누르기
             download = pickup_code_rt.locator("td").last
             with page.expect_popup(timeout=10000) as popup_info:
                 download.locator("div.eds-table__cell button").click()
+            # pdf download하기
             pop_up = popup_info.value
             pop_up.wait_for_load_state("domcontentloaded",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
             saved = download_pdf(pop_up,save_path=f"FWEE_FM_{KST}/FWEE_FM_{country}_{KST}.pdf") 
@@ -79,7 +83,7 @@ with sync_playwright() as p:
                     break
 
                 else:
-                    # 새로고침 후에 너무 빨라서 클릭이 제대로 안 됨 -> timeout 주기
+                    # 새로고침 후에 너무 빨라서 클릭이 제대로 안 됨 -> timeout 부여 
                     page.wait_for_timeout(3000)
 
                     # select All 버튼 클릭
@@ -100,17 +104,6 @@ with sync_playwright() as p:
                     break
 
                 page.reload(wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
-
-
-
-
-
-
-
-
-
-
-
 
     except Exception as e:
         print(e) 
