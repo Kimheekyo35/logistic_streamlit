@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-menu = st.sidebar.radio("Menu", ["홈","Fwee 송장번호 크롤링", "Numbuzin 송장번호 크롤링"])
+menu = st.sidebar.radio("Menu", ["홈","Fwee 송장번호 크롤링", "Numbuzin 송장번호 크롤링", "FW Fwee 크롤링"])
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -32,7 +32,7 @@ if not st.session_state["logged_in"]:
     st.stop()  # 로그인 전에는 아래 코드 실행 안 함
 
 elif menu == "홈":                                                           
-    st.title("물류팀 shopee 송장번호 크롤링 자동화 프로그램")                                                              
+    st.title("Shopee 송장번호 자동화 프로그램")                                                              
     st.write("Welcome to the homepage!")                 
 
 elif menu == "Fwee 송장번호 크롤링":                                                          
@@ -86,7 +86,7 @@ elif menu == "Numbuzin 송장번호 크롤링":
     st.subheader("사용 방법")
     st.text("1. '로그인 세션' 버튼 클릭 -> 인증코드 입력 -> 반드시 '확인' 버튼 클릭")
     st.text("2. 30초 정도 대기")
-    st.text("2. 원하는 나라 선택 후 크롤링 시작")
+    st.text("3. 원하는 나라 선택 후 크롤링 시작")
     st.write("----------------------------------------------------------------")
     script_path = Path(__file__).parent / "numbuzin_auth_login_once.py"             
                                                                                     
@@ -123,5 +123,20 @@ elif menu == "Numbuzin 송장번호 크롤링":
 
         if country_submitted and selected_countries:
             script = Path(__file__).parent / "numbuzin_crawling.py"
+            subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
+            st.success("크롤링이 완료되었습니다.")
+
+elif menu == "FW Fwee 크롤링":
+    st.title("FW Fwee 크롤링")
+    st.write("---")
+    script_path = Path(__file__).parent / "FW_fwee_crawling.py"    
+
+    with st.form("country_form"):
+        options = ["Singapore", "Malaysia", "Thailand", "Philippines", "Vietnam", "Taiwan Xiapi"]
+        selected_countries = st.multiselect("나라를 선택하세요:", options)
+        country_submitted = st.form_submit_button("크롤링 시작")    
+
+        if country_submitted and selected_countries:
+            script = Path(__file__).parent / "FM_fwee_crawling.py"
             subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
             st.success("크롤링이 완료되었습니다.")
