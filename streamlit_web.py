@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-menu = st.sidebar.radio("Menu", ["홈","Fwee 송장번호 크롤링", "Numbuzin 송장번호 크롤링", "FW Fwee 크롤링"])
+menu = st.sidebar.radio("Menu", ["홈","Fwee 송장번호 크롤링", "Numbuzin 송장번호 크롤링", "FM Fwee 크롤링", "FM Numbuzin 크롤링"])
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -126,10 +126,10 @@ elif menu == "Numbuzin 송장번호 크롤링":
             subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
             st.success("크롤링이 완료되었습니다.")
 
-elif menu == "FW Fwee 크롤링":
-    st.title("FW Fwee 크롤링")
+elif menu == "FM Fwee 크롤링":
+    st.title("FM Fwee 크롤링")
     st.write("---")
-    script_path = Path(__file__).parent / "FW_fwee_crawling.py"    
+    script_path = Path(__file__).parent / "FM_fwee_crawling.py"    
 
     with st.form("country_form"):
         options = ["Singapore", "Malaysia", "Thailand", "Philippines", "Vietnam", "Taiwan Xiapi"]
@@ -138,5 +138,19 @@ elif menu == "FW Fwee 크롤링":
 
         if country_submitted and selected_countries:
             script = Path(__file__).parent / "FM_fwee_crawling.py"
+            subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
+            st.success("크롤링이 완료되었습니다.")
+
+elif menu == "FM Numbuzin 크롤링":
+    st.title("FM Numbuzin 크롤링")
+    st.write("---")
+
+    with st.form("country_form"):
+        options = ["Singapore", "Malaysia", "Thailand", "Philippines", "Vietnam", "Taiwan Xiapi"]
+        selected_countries = st.multiselect("나라를 선택하세요:", options)
+        country_submitted = st.form_submit_button("크롤링 시작")    
+
+        if country_submitted and selected_countries:
+            script = Path(__file__).parent / "FM_Numbuzin_crawling.py" 
             subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
             st.success("크롤링이 완료되었습니다.")
