@@ -53,3 +53,8 @@ def pdf_merge(path):
 
 pdf_merge("퓌_test_files")
 
+<<<<<<< Updated upstream
+=======
+    print(f"PDF 병합 완료: {os.path.join(path, f'{name}_merged_output_{KST}.pdf')}")
+
+>>>>>>> Stashed changes

@@ -5,7 +5,7 @@ from pathlib import Path
 def download_pdf_from_shopee_preview(page: Page, save_path: str) -> str:
     # 1) PDF iframe이 붙을 때까지 기다리기 (blob: src)
     iframe = page.locator("iframe[type='application/pdf'][src^='blob:'], iframe[src^='blob:']").first
-    iframe.wait_for(state="attached", timeout=20000)
+    iframe.wait_for(state="attached", timeout=60000)
 
     # 2) iframe src가 blob:로 채워질 때까지 대기
     page.wait_for_function("""
@@ -13,7 +13,7 @@ def download_pdf_from_shopee_preview(page: Page, save_path: str) -> str:
         const f = document.querySelector("iframe[src^='blob:']");
         return !!f && typeof f.getAttribute("src") === "string" && f.getAttribute("src").startsWith("blob:");
       }
-    """, timeout=20000)
+    """, timeout=60000)
 
     # 3) blob PDF를 fetch해서 base64로 반환
     js = r"""
@@ -51,3 +51,4 @@ def download_pdf_from_shopee_preview(page: Page, save_path: str) -> str:
     out.write_bytes(base64.b64decode(result["b64"]))
 
     return str(out)
+
