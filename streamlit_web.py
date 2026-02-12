@@ -151,6 +151,6 @@ elif menu == "FM Numbuzin 크롤링":
         country_submitted = st.form_submit_button("크롤링 시작")    
 
         if country_submitted and selected_countries:
-            script = Path(__file__).parent / "FM_Numbuzin_crawling.py" 
+            script = Path(__file__).parent / "FM_numbuzin_crawling.py" 
             subprocess.run([sys.executable, str(script), *selected_countries], cwd=script.parent)
             st.success("크롤링이 완료되었습니다.")
