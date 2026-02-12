@@ -1,1 +1,4 @@
 .env
+*.pdf
+*.log
+퓌_test_files
