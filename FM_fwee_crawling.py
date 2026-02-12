@@ -14,15 +14,18 @@ PLAYWRIGHT_SELECTOR_TIMEOUT_MS = int("30000")
 
 fwee_countrylist = {
     "Singapore" : "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1147332494",
-    "TaiwanXiapi" : "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063847",
+    "Taiwan Xiapi" : "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063847",
     "Thailand" : "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063845",
     "Malaysia" : "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063834",
-    "Philippines": "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063836"
+    "Philippines": "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063836",
+    "Vietnam": "https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=1152063841"
 }
 
 dt = datetime.now()
 KST = dt.strftime("%Y_%m_%d")
 KST_hs = dt.strftime("%H%M%S")
+
+country_input = sys.argv[1:]
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
@@ -30,10 +33,8 @@ with sync_playwright() as p:
     page = context.new_page()
     page.goto("https://seller.shopee.kr/?cnsc_shop_id=1152063836",wait_until="domcontentloaded",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
 
-    country = input()
-
     try:
-        if country in fwee_countrylist:
+        for country in country_input:
             page.goto(fwee_countrylist[country],timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
             print(f"{country} 열었음")
             page.wait_for_timeout(5000)
@@ -41,9 +42,9 @@ with sync_playwright() as p:
             number = str(1)
             # Daily quantity에 1입력
             page.locator("input.eds-input__input[placeholder='Input number']").type(number,delay=110)
-            
+
             # Submit 버튼 누르기
-            submit = page.locator("div.first-mile-generate > button")
+            submit = page.locator("div.first-mile-generate > button").click()
             
             # 팝업 x표 누르기
             success_popup = page.locator("div.first-mile-generate div.eds-modal__box i.eds-modal__close").click()
@@ -87,21 +88,31 @@ with sync_playwright() as p:
                     page.wait_for_timeout(3000)
 
                     # select All 버튼 클릭
-                    select_all = page.locator("div.eds-table-scrollX-left div.eds-table__main-header tr th").nth(0).locator("label.eds-checkbox > span")
+                    select_all =  page.locator("div.eds-table-scrollX-left div.eds-table__main-header tr th").nth(0).locator("label.eds-checkbox > span")
                     select_all.wait_for(state="attached")
                     select_all.click()
-
-                    # Bind 어쩌고 버튼 클릭 
-                    bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").inner_text().strip()
-                    print(bind_button)
 
                     date = page.locator("div.eds-table__body-container div.eds-scrollbar__content tbody tr").first.locator("td").nth(6).inner_text().strip()
                     date = date.split()[0].split("/")[-1]
 
+                    # 퓌는 베트남 오류가 있어서 예외 처리
                     if country == "Vietnam" and date == "2025":
+                        print(f"{country} Skip")
                         break
+
+                    # Bind 어쩌고 버튼 클릭 
+                    bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").click()
+                    sub_button = page.locator("div.inline-fixed div.parcel div.eds-popover__popper--light div.footer div.btns button").nth(1).click()
                     
-                    break
+                    # Bind Parcel 팝업 뜨기
+                    Bind_parcel = page.locator("div.eds-modal__box div.eds-modal__body div.eds-form-item div.eds-input__inner input[type='text']").first.type(pickup_code,delay=140)
+                    
+                    #confirm 버튼 클릭
+                    page.locator("div.eds-modal__content div.eds-modal__footer div.footer button").nth(1).click()
+                    page.wait_for_timeout(3000)
+
+                    #processing 팝업 버튼 클릭
+                    page.locator("div.eds-modal__box div.eds-modal__body div.upload-result div.footer button").last.click()
 
                 page.reload(wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
 
