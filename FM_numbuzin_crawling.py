@@ -1,4 +1,4 @@
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeError
 from dotenv import load_dotenv
 from FM_iframe_to_pdf import download_pdf
 from datetime import datetime
@@ -12,7 +12,8 @@ PLAYWRIGHT_SELECTOR_TIMEOUT_MS = int("30000")
 num_countrylist = {
     "Singapore":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=358623637",
     "Taiwan Xiapi":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=545141727",
-    "Philippines":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=832134646"
+    "Philippines":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=832134646",
+    "Vietnam":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=989076281"
 }
 
 dt = datetime.now()
@@ -72,44 +73,49 @@ with sync_playwright() as p:
 
             # Pre-declare창에서 No Orders Found가 나올 때까지 반복
             while True:
-                empty = page.locator("div.eds-table__empty div.eds-default-page__content:has-text('No Orders Found')")
-                # empty가 보이면
-                if empty.is_visible():
-                    print("데이터 없음")
+                # empty = page.locator("div.eds-table__empty div.eds-default-page__content:has-text('No Orders Found')")
+                # if empty.is_visible():
+                #     print("No Orders Found -> break")
+                #     break
+                try:
+                    date = page.locator("div.eds-table__body-container div.eds-scrollbar__content tbody tr").first.locator("td").nth(6).inner_text(timeout=5000).strip()
+                    date = date.split()[0].split("/")[-1]
+                except PlaywrightTimeError:
+                    print("행 없음 -> 종료")
                     break
                 
-                else:
-                    page.wait_for_timeout(3000)
+                select_all = page.locator("div.eds-table-scrollX-left div.eds-table__main-header tr th").nth(0).locator("label.eds-checkbox > span")
+                select_all.wait_for(state="attached")
+                select_all.click()
 
-                    select_all = page.locator("div.eds-table-scrollX-left div.eds-table__main-header tr th").nth(0).locator("label.eds-checkbox > span")
-                    select_all.wait_for(state="attached")
-                    select_all.click()
+                bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").inner_text().strip()
 
-                    bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").inner_text().strip()
-                    print(bind_button)
+                if date == "2025":
+                    print("Skip")
+                    break
 
-                    date = page.locator("div.eds-table__body-container div.eds-scrollbar__content tbody tr").first.locator("td").nth(6).inner_text().strip()
-                    date = date.split()[0].split("/")[-1]
-                    
-                    if date == "2025":
-                        print("Skip")
-                        break
+                # Bind 어쩌고 버튼 클릭 
+                bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").click()
+                sub_button = page.locator("div.inline-fixed div.parcel div.eds-popover__popper--light div.footer div.btns button").nth(1).click()
 
-                    # Bind 어쩌고 버튼 클릭 
-                    bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").click()
-                    sub_button = page.locator("div.inline-fixed div.parcel div.eds-popover__popper--light div.footer div.btns button").nth(1).click()
-                    
-                    # Bind Parcel 팝업 뜨기
-                    Bind_parcel = page.locator("div.eds-modal__box div.eds-modal__body div.eds-form-item div.eds-input__inner input[type='text']").first.type(pickup_code,delay=140)
-                    
-                    #confirm 버튼 클릭
-                    page.locator("div.eds-modal__content div.eds-modal__footer div.footer button").nth(1).click()
-                    page.wait_for_timeout(3000)
+                # Shipping Method 설정
+                method = page.locator("div.eds-modal__box div.eds-modal__content div.eds-modal__body form div.eds-form-item__control").first
+                method.click()
+                page.locator("div.eds-scrollbar__content div.eds-select__options div").last.click()
+                
+                # Bind Parcel 팝업 뜨기
+                Bind_parcel = page.locator("div.eds-modal__box div.eds-modal__body div.eds-form-item div.eds-input__inner input[type='text']").first.type(pickup_code,delay=140)
+                
+                #confirm 버튼 클릭
+                page.locator("div.eds-modal__content div.eds-modal__footer div.footer button").nth(1).click()
+                page.wait_for_timeout(3000)
 
-                    #processing 팝업 버튼 클릭
-                    page.locator("div.eds-modal__box div.eds-modal__body div.upload-result div.footer button").last.click()
+                #processing 팝업 버튼 클릭
+                page.locator("div.eds-modal__box div.eds-modal__body div.upload-result div.footer button").last.click()
 
+                # 새로고침
                 page.reload(wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
 
     except Exception as e:
         print(e) 
+
