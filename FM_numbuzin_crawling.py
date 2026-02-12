@@ -2,6 +2,7 @@ from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 from FM_iframe_to_pdf import download_pdf
 from datetime import datetime
+import sys
 
 load_dotenv()
 
@@ -10,23 +11,23 @@ PLAYWRIGHT_SELECTOR_TIMEOUT_MS = int("30000")
 
 num_countrylist = {
     "Singapore":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=358623637",
-    "TaiwanXiapi":"https://seller.shopee.kr/portal/sale/order/pre-declare/link?type=1&cnsc_shop_id=545141727",
+    "Taiwan Xiapi":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=545141727",
     "Philippines":"https://seller.shopee.kr/portal/sale/order/pre-declare/generate?cnsc_shop_id=832134646"
 }
 
 dt = datetime.now()
 KST = dt.strftime("%Y_%m_%d")
 
+country_input = sys.argv[1:]
+
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
     context = browser.new_context(storage_state="numbuzin_shopee_state.json")
     page = context.new_page()
-    page.goto("https://seller.shopee.kr/?cnsc_shop_id=1152063836", wait_until="domcontentloaded")
-
-    country = input()
+    page.goto("https://seller.shopee.kr/?cnsc_shop_id=358623637", wait_until="domcontentloaded")
 
     try:
-        if country in num_countrylist:
+        for country in country_input:
             page.goto(num_countrylist[country],wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
             print(f"{country} 열었음")
             page.wait_for_timeout(5000)
@@ -89,8 +90,26 @@ with sync_playwright() as p:
 
                     date = page.locator("div.eds-table__body-container div.eds-scrollbar__content tbody tr").first.locator("td").nth(6).inner_text().strip()
                     date = date.split()[0].split("/")[-1]
-                    print(date)
                     
-                    page.reload(wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+                    if date == "2025":
+                        print("Skip")
+                        break
+
+                    # Bind 어쩌고 버튼 클릭 
+                    bind_button = page.locator("div.inline-fixed div.eds-popover__ref button").click()
+                    sub_button = page.locator("div.inline-fixed div.parcel div.eds-popover__popper--light div.footer div.btns button").nth(1).click()
+                    
+                    # Bind Parcel 팝업 뜨기
+                    Bind_parcel = page.locator("div.eds-modal__box div.eds-modal__body div.eds-form-item div.eds-input__inner input[type='text']").first.type(pickup_code,delay=140)
+                    
+                    #confirm 버튼 클릭
+                    page.locator("div.eds-modal__content div.eds-modal__footer div.footer button").nth(1).click()
+                    page.wait_for_timeout(3000)
+
+                    #processing 팝업 버튼 클릭
+                    page.locator("div.eds-modal__box div.eds-modal__body div.upload-result div.footer button").last.click()
+
+                page.reload(wait_until="load",timeout=PLAYWRIGHT_NAV_TIMEOUT_MS)
+
     except Exception as e:
-        print(e)
+        print(e) 
